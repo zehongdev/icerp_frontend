@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { Select } from 'radix-ui'
 import { toast } from 'sonner'
-import { useLanguage } from '../../app/providers/useLanguage'
 
 /* ═══════════ 类型 ═══════════ */
 
@@ -359,7 +358,6 @@ function SidePanel({
 function PurchaseFormPage() {
     const navigate = useNavigate()
     const { id } = useParams<{ id: string }>()
-    const { t } = useLanguage()
 
     const mode: Mode = id ? 'edit' : 'create'
 

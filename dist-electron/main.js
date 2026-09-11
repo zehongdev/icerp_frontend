@@ -1,59 +1,47 @@
-import { BrowserWindow, Menu, app, ipcMain } from "electron";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { BrowserWindow as e, Menu as t, app as n, ipcMain as r } from "electron";
+import i from "node:path";
+import { fileURLToPath as a } from "node:url";
 //#region electron/main.ts
-var __dirname = path.dirname(fileURLToPath(import.meta.url));
-async function createWindow() {
-	const win = new BrowserWindow({
+var o = i.dirname(a(import.meta.url));
+async function s() {
+	let n = new e({
 		width: 1680,
 		height: 1080,
 		minWidth: 960,
 		minHeight: 640,
 		backgroundColor: "#1f1d1f",
-		frame: false,
+		frame: !1,
 		webPreferences: {
-			nodeIntegration: false,
-			contextIsolation: true,
-			preload: path.join(__dirname, "preload.mjs")
+			nodeIntegration: !1,
+			contextIsolation: !0,
+			preload: i.join(o, "preload.mjs")
 		}
-	});
-	const url = process.env.VITE_DEV_SERVER_URL || process.env.ELECTRON_RENDERER_URL;
-	if (url) await win.loadURL(url);
-	else await win.loadFile(path.join(__dirname, "../dist/index.html"));
-	Menu.setApplicationMenu(null);
-	if (process.env.VITE_DEV_SERVER_URL) win.webContents.openDevTools({ mode: "detach" });
+	}), r = process.env.VITE_DEV_SERVER_URL || process.env.ELECTRON_RENDERER_URL;
+	r ? await n.loadURL(r) : await n.loadFile(i.join(o, "../dist/index.html")), t.setApplicationMenu(null), process.env.VITE_DEV_SERVER_URL && n.webContents.openDevTools({ mode: "detach" });
 }
-app.whenReady().then(() => {
-	createWindow().catch((error) => {
-		console.error("Failed to start Electron window:", error);
-		app.quit();
+n.whenReady().then(() => {
+	s().catch((e) => {
+		console.error("Failed to start Electron window:", e), n.quit();
 	});
-});
-app.on("window-all-closed", () => {
-	if (process.platform !== "darwin") app.quit();
-});
-app.on("activate", () => {
-	if (BrowserWindow.getAllWindows().length === 0) createWindow().catch((error) => {
-		console.error("Failed to activate Electron window:", error);
-		app.quit();
+}), n.on("window-all-closed", () => {
+	process.platform !== "darwin" && n.quit();
+}), n.on("activate", () => {
+	e.getAllWindows().length === 0 && s().catch((e) => {
+		console.error("Failed to activate Electron window:", e), n.quit();
 	});
-});
-ipcMain.on("window-control", (_event, action) => {
-	const win = BrowserWindow.getFocusedWindow();
-	if (!win) return;
-	switch (action) {
+}), r.on("window-control", (t, n) => {
+	let r = e.getFocusedWindow();
+	if (r) switch (n) {
 		case "minimize":
-			win.minimize();
+			r.minimize();
 			break;
 		case "maximize":
-			if (win.isMaximized()) win.unmaximize();
-			else win.maximize();
+			r.isMaximized() ? r.unmaximize() : r.maximize();
 			break;
-		case "close": win.close();
+		case "close": r.close();
 	}
-});
-ipcMain.on("plugin-data", (_, data) => {
-	console.log("Received message from renderer:", data);
+}), r.on("plugin-data", (e, t) => {
+	console.log("Received message from renderer:", t);
 });
 //#endregion
 export {};

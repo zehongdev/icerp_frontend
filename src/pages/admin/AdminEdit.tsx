@@ -175,10 +175,7 @@ export function UserFormDialog({
     const [saving, setSaving] = useState(false)
     const [showPwd, setShowPwd] = useState(false)
 
-    // AdminUsersPage 里
-    const [dialogOpen, setDialogOpen] = useState(false)
-    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create')
-    const [editingUser, setEditingUser] = useState<User | null>(null)
+
 
     const isEdit = mode === 'edit'
     const isSelf = isEdit && currentUserId === editingUserId

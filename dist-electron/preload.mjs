@@ -1,8 +1,1 @@
-let electron = require("electron");
-//#region electron/preload.ts
-electron.contextBridge.exposeInMainWorld("electronAPI", { onServerEvent(callback) {
-	electron.ipcRenderer.on("server-event", (_, data) => {
-		callback(data);
-	});
-} });
-//#endregion
+let e=require("electron");e.contextBridge.exposeInMainWorld(`electronAPI`,{onServerEvent(t){e.ipcRenderer.on(`server-event`,(e,n)=>{t(n)})}});
