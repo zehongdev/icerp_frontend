@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "es2023",
+        "module": "nodenext",
+        "moduleResolution": "NodeNext",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "allowImportingTsExtensions": true,
+        "rewriteRelativeImportExtensions": true,
+        "types": [
+            "node",
+            "electron"
+        ]
+    },
+    "include": [
+        "./**/*.ts"
+    ],
+}

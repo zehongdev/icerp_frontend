@@ -1,0 +1,11 @@
+.supplier-input {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+}
+
+.supplier-input:hover{
+    background-color: var(--color-surface-hover);
+}
+.supplier-input:focus-within{
+    background-color: var(--color-surface-hover);
+}
