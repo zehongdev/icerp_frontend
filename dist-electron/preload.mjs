@@ -1,1 +1,0 @@
-let e=require("electron");e.contextBridge.exposeInMainWorld(`electronAPI`,{onServerEvent(t){e.ipcRenderer.on(`server-event`,(e,n)=>{t(n)})}});
