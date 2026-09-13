@@ -10,6 +10,12 @@
 import { toast } from 'sonner';
 import queryClient from '../lib/query/queryClient';
 
+const webSocketUrl = import.meta.env.VITE_WS_URL;
+
+if (!webSocketUrl) {
+    throw new Error('VITE_WS_URL must be set.');
+}
+
 class SocketClient {
     private ws?: WebSocket;
     private retryCount: number;
@@ -36,7 +42,7 @@ class SocketClient {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             return;
         }
-        this.ws = new WebSocket('ws://localhost:9001/ws');
+        this.ws = new WebSocket(webSocketUrl);
         this.ws.onopen = () => {
             console.log('WebSocket connection opened');
             this.retryCount = 0;

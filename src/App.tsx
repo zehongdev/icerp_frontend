@@ -1,14 +1,14 @@
 
 import { QueryClientProvider } from '@tanstack/react-query'
 import queryClient from './lib/query/queryClient'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { Toaster } from 'sonner'
+import { toast, Toaster } from 'sonner'
 import { Minus, Square, X } from 'lucide-react'
 import AppLayout from './app/layouts/AppLayout'
 import { LanguageProvider } from './app/providers/LanguageProvider'
 import { ConfirmProvider } from './components/alert-dialog/ConfirmDialog'
-import { isAuthenticated } from './features/auth/session'
+import { isAuthenticated, readAuthSession } from './features/auth/session'
 import LoginPage from './pages/login/Login'
 
 // const queryClient = new QueryClient({
@@ -23,11 +23,12 @@ import LoginPage from './pages/login/Login'
 
 function App() {
   const [authenticated, setAuthenticated] = useState(isAuthenticated())
+  const hasShownSessionRestoreToast = useRef(false)
   const electronApi = (window as Window & {
-    electron?: {
-      send: (channel: string, data?: unknown) => void
+    electronAPI?: {
+      windowControl: (action: 'minimize' | 'maximize' | 'close') => void
     }
-  }).electron
+  }).electronAPI
 
   useEffect(() => {
     const syncAuthState = () => setAuthenticated(isAuthenticated())
@@ -38,8 +39,24 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (hasShownSessionRestoreToast.current) {
+      return
+    }
+
+    const session = readAuthSession()
+    if (!session) {
+      return
+    }
+
+    hasShownSessionRestoreToast.current = true
+    toast.success('已恢复登录状态', {
+      description: `欢迎回来，${session.username}。`,
+    })
+  }, [])
+
   const handleWindowControl = (action: 'minimize' | 'maximize' | 'close') => {
-    electronApi?.send('window-control', action)
+    electronApi?.windowControl(action)
   }
 
   return (

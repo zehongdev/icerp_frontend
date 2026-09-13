@@ -1,8 +1,29 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Bell, Globe, ShieldCheck, Wifi, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../app/providers/useLanguage';
+import { toast } from 'sonner';
 type SettingTab = 'general' | 'connection' | 'notification' | 'security';
+type UpdateStatus =
+    | { type: 'available' | 'downloaded' | 'error' | 'not-available' }
+    | { type: 'download-progress'; percent: number };
+
+type UpdateCheckResult = {
+    started: boolean;
+    reason?: 'development' | 'failed' | 'in-progress';
+    currentVersion?: string;
+    latestVersion?: string;
+};
+
+declare global {
+    interface Window {
+        electronAPI?: {
+            getAppVersion: () => Promise<string>;
+            checkForUpdates: () => Promise<UpdateCheckResult>;
+            onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
+        };
+    }
+}
 
 const tabs: { key: SettingTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'general', label: 'General', icon: Globe },
@@ -13,13 +34,139 @@ const tabs: { key: SettingTab; label: string; icon: React.ComponentType<{ classN
 
 export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const [activeTab, setActiveTab] = useState<SettingTab>('general');
+    const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+    const [isDownloadingUpdate, setIsDownloadingUpdate] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState(0);
+    const [currentVersion, setCurrentVersion] = useState('开发环境');
+    const [latestVersion, setLatestVersion] = useState('未知');
     const { language, setLanguage } = useLanguage();
+
+    useEffect(() => {
+        const electronApi = window.electronAPI;
+        if (!electronApi) {
+            return;
+        }
+
+        electronApi.getAppVersion()
+            .then((version) => setCurrentVersion(version))
+            .catch((error) => console.error('Failed to read application version:', error));
+    }, []);
+
+    useEffect(() => {
+        const electronApi = window.electronAPI;
+        if (!electronApi) {
+            return;
+        }
+
+        return electronApi.onUpdateStatus((status) => {
+            switch (status.type) {
+                case 'not-available':
+                    setIsCheckingUpdate(false);
+                    toast.success('当前已是最新版本');
+                    break;
+                case 'available':
+                    setIsCheckingUpdate(false);
+                    setIsDownloadingUpdate(true);
+                    setDownloadProgress(0);
+                    toast.info('发现新版本，正在后台下载。');
+                    break;
+                case 'download-progress':
+                    setIsCheckingUpdate(false);
+                    setIsDownloadingUpdate(true);
+                    setDownloadProgress(status.percent);
+                    break;
+                case 'error':
+                    setIsCheckingUpdate(false);
+                    setIsDownloadingUpdate(false);
+                    toast.error('检查更新失败，请稍后重试。');
+                    break;
+                case 'downloaded':
+                    setIsCheckingUpdate(false);
+                    setIsDownloadingUpdate(false);
+                    setDownloadProgress(100);
+                    toast.success('新版本下载完成，请重启应用安装。');
+                    break;
+            }
+        });
+    }, []);
+
+    const handleCheckForUpdates = useCallback(async () => {
+        const electronApi = window.electronAPI;
+        if (!electronApi) {
+            toast.info('检查更新仅在已安装的桌面应用中可用。');
+            return;
+        }
+
+        setIsCheckingUpdate(true);
+        setDownloadProgress(0);
+        try {
+            const result = await electronApi.checkForUpdates();
+            if (result.started) {
+                setCurrentVersion(result.currentVersion ?? currentVersion);
+                setLatestVersion(result.latestVersion ?? latestVersion);
+                return;
+            }
+
+            setIsCheckingUpdate(false);
+            if (result.reason === 'development') {
+                toast.info('检查更新仅在已安装的桌面应用中可用。');
+            } else if (result.reason === 'failed') {
+                toast.error('检查更新失败，请稍后重试。');
+            } else {
+                toast.info('已有更新检查正在进行。');
+            }
+        } catch (error) {
+            setIsCheckingUpdate(false);
+            toast.error('检查更新失败，请稍后重试。');
+            console.error('Failed to request update check:', error);
+        }
+    }, [currentVersion, latestVersion]);
 
     const content = useMemo(() => {
         switch (activeTab) {
             case 'general':
                 return (
                     <div className="flex flex-col gap-4">
+                        <section className="rounded-[10px] border border-white/10 bg-(--bg-panel-alt) p-4">
+                            <h3 className="text-sm font-medium text-white">版本信息</h3>
+                            <div className="mt-4 flex items-center justify-between">
+                                <div>
+                                    <div>当前版本：v{currentVersion}</div>
+                                    <div>最新版本：{latestVersion === '未知' ? '未知' : `v${latestVersion}`}</div>
+                                </div>
+                                <div>
+                                    <button
+                                        type="button"
+                                        className="rounded-lg bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        onClick={() => void handleCheckForUpdates()}
+                                        disabled={isCheckingUpdate || isDownloadingUpdate}
+                                    >
+                                        {isDownloadingUpdate ? '正在下载...' : isCheckingUpdate ? '检测更新中...' : '检查更新'}
+                                    </button>
+                                </div>
+                            </div>
+                            {isDownloadingUpdate ? (
+                                <div className="mt-4">
+                                    <div className="mb-1.5 flex justify-between text-xs text-(--txt-color-secondary)">
+                                        <span>正在后台下载更新</span>
+                                        <span>{downloadProgress}%</span>
+                                    </div>
+                                    <div
+                                        className="h-2 overflow-hidden rounded-full bg-white/10"
+                                        role="progressbar"
+                                        aria-label="更新下载进度"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={downloadProgress}
+                                    >
+                                        <div
+                                            className="h-full rounded-full bg-blue-500 transition-[width] duration-200"
+                                            style={{ width: `${downloadProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ) : null}
+                        </section>
                         {/* <section className="rounded-[10px] border border-white/10 bg-(--bg-panel-alt) p-4">
                             <h3 className="text-sm font-medium text-white">Company profile</h3>
                             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -150,7 +297,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             default:
                 return null;
         }
-    }, [activeTab, language, setLanguage]);
+    }, [activeTab, currentVersion, downloadProgress, handleCheckForUpdates, isCheckingUpdate, isDownloadingUpdate, language, latestVersion, setLanguage]);
 
     return (
         <Dialog.Root open={open} onOpenChange={onOpenChange}>

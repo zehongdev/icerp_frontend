@@ -1,10 +1,14 @@
 ﻿import axios from 'axios'
 import { clearAuthSession, readAuthSession } from '../../features/auth/session'
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:9001'
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+
+if (!apiBaseUrl) {
+  throw new Error('VITE_API_BASE_URL must be set.')
+}
 
 export const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: apiBaseUrl,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -28,10 +32,6 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       clearAuthSession()
-
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
     }
 
     return Promise.reject(error)

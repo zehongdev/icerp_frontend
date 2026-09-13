@@ -1,6 +1,6 @@
 ﻿import axios from 'axios'
 import apiClient from '../../lib/api/client'
-import { clearAuthSession, loginWithCredentials, saveAuthSession, type AuthSession } from './session'
+import { clearAuthSession, saveAuthSession, type AuthSession } from './session'
 import type {
   AuthLoginApiResponse,
   AuthMeApiResponse,
@@ -42,11 +42,11 @@ export async function loginUser(payload: LoginRequest): Promise<AuthSession> {
       throw new Error(errorMessage)
     }
 
-    try {
-      return loginWithCredentials(payload.email, payload.password, payload.rememberMe ?? true)
-    } catch (fallbackError) {
-      throw new Error((fallbackError as Error).message ?? '登录失败，请稍后重试。')
+    if (error instanceof Error) {
+      throw error
     }
+
+    throw new Error('登录失败，请稍后重试。')
   }
 }
 

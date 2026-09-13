@@ -35,7 +35,7 @@ function Sidebar() {
                 <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-(--select) text-(--txt-color-primary) cursor-default">I</div>
                 <div>
                     <div className="font-bold text-(--txt-color-primary) text-lg">ICERP</div>
-                    <div className="text-xs text-(--txt-color-muted)">{t('enterpriseSuite')}</div>
+                    <div className="text-xs text-(--txt-color-muted)">Semrich Tech</div>
                 </div>
             </div>
 
@@ -73,7 +73,7 @@ function Sidebar() {
                     <span>{t('settings') ?? 'Settings'}</span>
                 </button>
                 <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-                <span>v1.0.0</span>
+                {/* <span>v1.0.0</span> */}
             </div>
         </aside>
     )
